@@ -2,13 +2,11 @@ import React, { Component } from 'react';
 import Camera from 'react-camera';
 import vision from "react-cloud-vision-api";
 
-var base64Img = require('base64-img');
-
-vision.init({ auth: 'aca176a6d6b1d72e386cd68a14b77ec4c3262944'})
+vision.init({ auth: 'AIzaSyCCkgum6iXGrPShHnahkr9sEclHqVwjPjI'})
 
 export default class App extends Component {
 
-  state = { mediaStream: MediaStream, frameRate: 0 };
+  state = { mediaStream: MediaStream, frameRate: 0, leftEyeX: 0, leftEyeY: 0, rightEyeX: 0, rightEyeY: 0, positions: [] };
 
   constructor(props) {
     super(props);
@@ -16,98 +14,16 @@ export default class App extends Component {
     this.frameRate = 0;
   }
 
-  // uploadFrame() {
-  //   this.camera.capture()
-  //   .then(blob => {
-  //     console.log(`Blob: ${blob}`)
-  //     this.img.src = URL.createObjectURL(blob);
-  //     this.uploadToVisionAPI(this.img.src)
-  //     this.img.onload = () => {  URL.revokeObjectURL(this.src) }
-  //   })
-  // }
-
-  uploadFrame() {
-    this.grabFrame()
-    .then(function(bitmapImage) {
-      var canvas = document.createElement("canvas")
-      canvas.width = bitmapImage.width;
-      canvas.height = bitmapImage.height;
-      
-      let context = canvas.getContext("2d")
-      context.drawImage(bitmapImage, 0, 0);
-
-      let base64Image = canvas.toDataURL("image/png").split(",")[1]
-      console.log(base64Image)
-      const request = new vision.Request({
-        image: new vision.Image({
-          base64: base64Image,
-        }),
-        features: [ new vision.Feature('FACE_DETECTION') ]
-      })
-  
-      vision.annotate(request)
-      .then((response) => {
-        console.log(`Response: ${response}`)
-      })
-      .catch((error) => {
-        console.log(`Error: ${error}`)
-      });
-    }).catch((error) => {
-      console.log('grabFrame() error: ', error)
-    });
-  }
-
-  grabFrame() {
-    let mediaStreamTrack = this.state.mediaStream.getVideoTracks()[0];
-    let imageCapture = new window.ImageCapture(mediaStreamTrack);
-
-    return imageCapture.grabFrame();
-  }
-
-  imageAsBase64(image) {
-    var canvas = document.createElement("canvas")
-    canvas.width = image.width;
-    canvas.height = image.height;
-    
-    let context = canvas.getContext("2d")
-    context.drawImage(image, 0, 0);
-
-    return canvas.toDataURL("image/png", 0.5)
-  }
-
-
-  // imageAsBase64(img) {
-  //   var reader = new FileReader();
-  //   reader.onload = function (event) {
-  //     let base64Image = event.target.result
-  //     this.uploadToVisionAPI(base64Image)
-  //   }
-  //   reader.readAsDataURL(img);
-  // }
-
-  uploadToVisionAPI(base64Image) {
-    const request = new vision.Request({
-      image: new vision.Image({
-        base64: base64Image,
-      }),
-      features: [ new vision.Feature('FACE_DETECTION') ]
-    })
-
-    vision.annotate(request)
-    .then((response) => {
-      console.log(`Response: ${response}`)
-    })
-    .catch((error) => {
-      console.log(`Error: ${error}`)
-    });
-  }
-
   componentDidMount() {
     this.setMediaStreamAndFrameRate()
     this.beginImageUpload()
   }
 
-  setMediaStreamAndFrameRate() {
+  componentWillUnmount() {
+    clearInterval(this.interval)
+  }
+
+  setMediaStreamAndFrameRate = () => {
     if (navigator.mediaDevices) {
       navigator.mediaDevices.getUserMedia({video: true})
       .then(mediaStream => {
@@ -118,19 +34,79 @@ export default class App extends Component {
     }
   }
 
-  beginImageUpload() {
+  beginImageUpload = () => {
     let milliSeconds = 1000/this.state.frameRate
     this.uploadImageEveryNumberOf(milliSeconds)
   }
 
-  uploadImageEveryNumberOf(milliSeconds) {
+  uploadImageEveryNumberOf = (milliSeconds) => {
     this.interval = setInterval(() => {
       this.uploadFrame()
-    }, 3000);
+    }, milliSeconds);
   }
 
-  componentWillUnmount() {
-    clearInterval(this.interval)
+  uploadFrame = () => {
+    this.grabFrame()
+    .then((bitmapImage) => {
+      let base64Image = this.imageAsBase64(bitmapImage)
+      this.uploadToVisionAPI(base64Image)
+    }).catch((error) => {
+      console.log('grabFrame() error: ', error)
+    });
+  }
+
+  grabFrame = () => {
+    let mediaStreamTrack = this.state.mediaStream.getVideoTracks()[0];
+    let imageCapture = new window.ImageCapture(mediaStreamTrack);
+
+    return imageCapture.grabFrame();
+  }
+
+  imageAsBase64 = image => {
+    var canvas = document.createElement("canvas")
+    canvas.width = image.width;
+    canvas.height = image.height;
+    
+    let context = canvas.getContext("2d")
+    context.drawImage(image, 0, 0);
+
+    return canvas.toDataURL("image/png", 0.5)
+  }
+
+  uploadToVisionAPI = base64Image => {
+    let request = this.createRequestFromImage(base64Image)
+
+    vision.annotate(request)
+    .then((res) => {
+      let aaaa = res.responses[0].faceAnnotations[0].landmarks.map(elem => {
+        return elem.position
+      })
+      console.log(aaaa);
+      let leftEyePosition = res.responses[0].faceAnnotations[0].landmarks[0].position
+      let rightEyePosition = res.responses[0].faceAnnotations[0].landmarks[1].position
+
+      let leftEyeX = JSON.stringify(leftEyePosition.x)
+      let leftEyeY = JSON.stringify(leftEyePosition.y)
+      let rightEyeX = JSON.stringify(rightEyePosition.x)
+      let rightEyeY = JSON.stringify(rightEyePosition.y)
+
+      console.log(leftEyeX)
+      console.log(leftEyeY)
+      
+      this.setState({leftEyeX: leftEyeX, leftEyeY: leftEyeY, rightEyeX: rightEyeX, rightEyeY: rightEyeY, positions: aaaa})
+    })
+    .catch((error) => {
+      console.log(`Error: ${error.message}`)
+    });
+  }
+
+  createRequestFromImage = base64Image => {
+    return new vision.Request({
+      image: new vision.Image({
+        base64: base64Image,
+      }),
+      features: [ new vision.Feature('FACE_DETECTION', 4) ]
+    })
   }
 
   render() {
@@ -143,18 +119,55 @@ export default class App extends Component {
           }}
         >
         </Camera>
-        <img
-          ref={(img) => {
-            this.img = img;
-          }}
-        />
+        <Canvas leftEyeX={this.state.leftEyeX} leftEyeY={this.state.leftEyeY} rightEyeX={this.state.rightEyeX} rightEyeY={this.state.rightEyeY} positions={this.state.positions}/>
       </div>
-    );
+    )
+  }
+}
+
+class Canvas extends React.Component {
+  constructor() {
+    super();
+
+    this.ctx = null;
+  }
+  componentDidMount() {
+    this.ctx = this.refs.canvas.getContext("2d")
+  }
+
+  componentWillReceiveProps(props) {
+    this.ctx.clearRect(0,0,this.refs.canvas.width, this.refs.canvas.height);
+    // this.drawPoints(props)
+    props.positions.forEach(position => {
+      this.point(position.x, position.y);
+    })
+
+  }
+
+  drawPoints = (props) => {
+    this.point(props.leftEyeX, props.leftEyeY)
+    this.point(props.rightEyeX, props.rightEyeY)
+  }
+
+  point = (x, y) => {
+    this.ctx.beginPath();
+    this.ctx.strokeStyle = "lightgreen"
+    this.ctx.arc(x, y, 1, 0, 2 * Math.PI, true);
+    this.ctx.stroke();
+  }
+
+  render() {
+    return <canvas style={style.canvas} ref="canvas" width={640} height={480}></canvas>;
   }
 }
 
 const style = {
+  canvas: {
+    position: 'absolute'
+  },
   preview: {
-    position: 'relative',
+    position: 'absolute',
+    width: 640,
+    height: 480
   }
 };

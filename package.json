@@ -25,6 +25,7 @@
     "parcel-bundler": "^1.11.0"
   },
   "dependencies": {
+    "@google-cloud/vision": "^0.24.0",
     "@reach/router": "^1.2.1",
     "antd": "^3.11.6",
     "base64-img": "^1.0.4",
