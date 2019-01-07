@@ -29514,10 +29514,6 @@ function (_Component) {
     _this.state = {
       mediaStream: MediaStream,
       frameRate: 0,
-      leftEyeX: 0,
-      leftEyeY: 0,
-      rightEyeX: 0,
-      rightEyeY: 0,
       positions: []
     };
 
@@ -29579,25 +29575,12 @@ function (_Component) {
       var request = _this.createRequestFromImage(base64Image);
 
       _reactCloudVisionApi.default.annotate(request).then(function (res) {
-        var aaaa = res.responses[0].faceAnnotations[0].landmarks.map(function (elem) {
+        var positions = res.responses[0].faceAnnotations[0].landmarks.map(function (elem) {
           return elem.position;
         });
-        console.log(aaaa);
-        var leftEyePosition = res.responses[0].faceAnnotations[0].landmarks[0].position;
-        var rightEyePosition = res.responses[0].faceAnnotations[0].landmarks[1].position;
-        var leftEyeX = JSON.stringify(leftEyePosition.x);
-        var leftEyeY = JSON.stringify(leftEyePosition.y);
-        var rightEyeX = JSON.stringify(rightEyePosition.x);
-        var rightEyeY = JSON.stringify(rightEyePosition.y);
-        console.log(leftEyeX);
-        console.log(leftEyeY);
 
         _this.setState({
-          leftEyeX: leftEyeX,
-          leftEyeY: leftEyeY,
-          rightEyeX: rightEyeX,
-          rightEyeY: rightEyeY,
-          positions: aaaa
+          positions: positions
         });
       }).catch(function (error) {
         console.log("Error: ".concat(error.message));
@@ -29642,10 +29625,6 @@ function (_Component) {
           _this2.camera = cam;
         }
       }), _react.default.createElement(Canvas, {
-        leftEyeX: this.state.leftEyeX,
-        leftEyeY: this.state.leftEyeY,
-        rightEyeX: this.state.rightEyeX,
-        rightEyeY: this.state.rightEyeY,
         positions: this.state.positions
       }));
     }
@@ -29655,6 +29634,16 @@ function (_Component) {
 }(_react.Component);
 
 exports.default = App;
+var style = {
+  canvas: {
+    position: 'absolute'
+  },
+  preview: {
+    position: 'absolute',
+    width: 640,
+    height: 480
+  }
+};
 
 var Canvas =
 /*#__PURE__*/
@@ -29677,7 +29666,7 @@ function (_React$Component) {
     _this3.point = function (x, y) {
       _this3.ctx.beginPath();
 
-      _this3.ctx.strokeStyle = "lightgreen";
+      _this3.ctx.strokeStyle = "red";
 
       _this3.ctx.arc(x, y, 1, 0, 2 * Math.PI, true);
 
@@ -29698,8 +29687,7 @@ function (_React$Component) {
     value: function componentWillReceiveProps(props) {
       var _this4 = this;
 
-      this.ctx.clearRect(0, 0, this.refs.canvas.width, this.refs.canvas.height); // this.drawPoints(props)
-
+      this.ctx.clearRect(0, 0, this.refs.canvas.width, this.refs.canvas.height);
       props.positions.forEach(function (position) {
         _this4.point(position.x, position.y);
       });
@@ -29718,17 +29706,6 @@ function (_React$Component) {
 
   return Canvas;
 }(_react.default.Component);
-
-var style = {
-  canvas: {
-    position: 'absolute'
-  },
-  preview: {
-    position: 'absolute',
-    width: 640,
-    height: 480
-  }
-};
 },{"react":"../node_modules/react/index.js","react-camera":"../node_modules/react-camera/dist-es6/index.js","react-cloud-vision-api":"../node_modules/react-cloud-vision-api/index.js"}],"index.js":[function(require,module,exports) {
 "use strict";
 
@@ -29768,7 +29745,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "57741" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "50040" + '/');
 
   ws.onmessage = function (event) {
     var data = JSON.parse(event.data);

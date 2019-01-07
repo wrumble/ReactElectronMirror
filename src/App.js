@@ -6,7 +6,7 @@ vision.init({ auth: 'AIzaSyCCkgum6iXGrPShHnahkr9sEclHqVwjPjI'})
 
 export default class App extends Component {
 
-  state = { mediaStream: MediaStream, frameRate: 0, leftEyeX: 0, leftEyeY: 0, rightEyeX: 0, rightEyeY: 0, positions: [] };
+  state = { mediaStream: MediaStream, frameRate: 0, positions: [] };
 
   constructor(props) {
     super(props);
@@ -78,22 +78,11 @@ export default class App extends Component {
 
     vision.annotate(request)
     .then((res) => {
-      let aaaa = res.responses[0].faceAnnotations[0].landmarks.map(elem => {
+      let positions = res.responses[0].faceAnnotations[0].landmarks.map(elem => {
         return elem.position
       })
-      console.log(aaaa);
-      let leftEyePosition = res.responses[0].faceAnnotations[0].landmarks[0].position
-      let rightEyePosition = res.responses[0].faceAnnotations[0].landmarks[1].position
-
-      let leftEyeX = JSON.stringify(leftEyePosition.x)
-      let leftEyeY = JSON.stringify(leftEyePosition.y)
-      let rightEyeX = JSON.stringify(rightEyePosition.x)
-      let rightEyeY = JSON.stringify(rightEyePosition.y)
-
-      console.log(leftEyeX)
-      console.log(leftEyeY)
       
-      this.setState({leftEyeX: leftEyeX, leftEyeY: leftEyeY, rightEyeX: rightEyeX, rightEyeY: rightEyeY, positions: aaaa})
+      this.setState({positions: positions})
     })
     .catch((error) => {
       console.log(`Error: ${error.message}`)
@@ -119,45 +108,9 @@ export default class App extends Component {
           }}
         >
         </Camera>
-        <Canvas leftEyeX={this.state.leftEyeX} leftEyeY={this.state.leftEyeY} rightEyeX={this.state.rightEyeX} rightEyeY={this.state.rightEyeY} positions={this.state.positions}/>
+        <Canvas positions={this.state.positions}/>
       </div>
     )
-  }
-}
-
-class Canvas extends React.Component {
-  constructor() {
-    super();
-
-    this.ctx = null;
-  }
-  componentDidMount() {
-    this.ctx = this.refs.canvas.getContext("2d")
-  }
-
-  componentWillReceiveProps(props) {
-    this.ctx.clearRect(0,0,this.refs.canvas.width, this.refs.canvas.height);
-    // this.drawPoints(props)
-    props.positions.forEach(position => {
-      this.point(position.x, position.y);
-    })
-
-  }
-
-  drawPoints = (props) => {
-    this.point(props.leftEyeX, props.leftEyeY)
-    this.point(props.rightEyeX, props.rightEyeY)
-  }
-
-  point = (x, y) => {
-    this.ctx.beginPath();
-    this.ctx.strokeStyle = "lightgreen"
-    this.ctx.arc(x, y, 1, 0, 2 * Math.PI, true);
-    this.ctx.stroke();
-  }
-
-  render() {
-    return <canvas style={style.canvas} ref="canvas" width={640} height={480}></canvas>;
   }
 }
 
@@ -171,3 +124,37 @@ const style = {
     height: 480
   }
 };
+
+class Canvas extends React.Component {
+  constructor() {
+    super();
+    this.ctx = null;
+  }
+  componentDidMount() {
+    this.ctx = this.refs.canvas.getContext("2d")
+  }
+
+  componentWillReceiveProps(props) {
+    this.ctx.clearRect(0,0,this.refs.canvas.width, this.refs.canvas.height);
+
+    props.positions.forEach(position => {
+      this.point(position.x, position.y);
+    })
+  }
+
+  drawPoints = (props) => {
+    this.point(props.leftEyeX, props.leftEyeY)
+    this.point(props.rightEyeX, props.rightEyeY)
+  }
+
+  point = (x, y) => {
+    this.ctx.beginPath();
+    this.ctx.strokeStyle = "red"
+    this.ctx.arc(x, y, 1, 0, 2 * Math.PI, true);
+    this.ctx.stroke();
+  }
+
+  render() {
+    return <canvas style={style.canvas} ref="canvas" width={640} height={480}></canvas>;
+  }
+}
